@@ -163,7 +163,7 @@ class MedicalDatabase:
             return 0
         else:
             registerQuery = "INSERT INTO users (username, password, epsilon) VALUES (%s, %s, %s)"
-            self.cursor.execute(registerQuery, (username, password, 5))
+            self.cursor.execute(registerQuery, (username, password, 5.0))
             self.connection.commit()
             return 1
 

@@ -28,7 +28,7 @@ db_cursor.execute("""CREATE TABLE users (
                     ID INT PRIMARY KEY AUTO_INCREMENT,
                     username VARCHAR(30),
                     password VARCHAR(30),
-                    epsilon INT
+                    epsilon FLOAT
                 );""")
 
 insert_patients = (
