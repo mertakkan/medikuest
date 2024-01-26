@@ -97,6 +97,39 @@
   transition: background-color 0.3s;
 }
 
+.query-button {
+  background: #4E8098;
+  color: white;
+  padding: 10px 15px;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  margin: 10px;
+}
+
+.query-button:hover + .query-description {
+  visibility: visible; /* Show on hover */
+  opacity: 1;
+}
+
+.query-description {
+  display: block; 
+  visibility: hidden;
+  width: 600px;
+  background-color: #f9f9f9;
+  color: black;
+  border-radius: 6px;
+  padding: 5px 10px;
+  position: absolute;
+  z-index: 100; 
+  bottom: 50px;
+  left: 50%;
+  transform: translateX(-50%);
+  transition: visibility 0.2s, opacity 0.2s linear;
+}
+
+
 .execute-button:hover {
   background: #3b617a;
   color: white;

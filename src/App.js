@@ -11,11 +11,35 @@ function App() {
   const [result, setResult] = useState(''); 
   const [histogramImage, setHistogramImage] = useState('');
   const [imageKey, setImageKey] = useState(0);
+  const [queryResult1, setQueryResult1] = useState('');
+  const [showQueryDescription, setShowQueryDescription] = useState(false); // description visibility
 
   const handleAuthSuccess = (username) => {
     setIsAuthenticated(true);
     setLoggedInUsername(username);
   };
+
+  const fetchComplexQuery1 = async () => {
+    const response = await fetch('http://localhost:5000/api/complexQuery1', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        username: loggedInUsername,
+        personal_epsilon: 10 
+      }),
+    });
+
+    const data = await response.json();
+    if (data.image) {
+      setHistogramImage(`data:image/png;base64,${data.image}`);
+      setImageKey(prevKey => prevKey + 1);
+    }
+  };
+
+
+
 
   const fetchHistogram = async (selectedOption) => {
     let attribute, values;
@@ -146,14 +170,31 @@ function App() {
             <h1 className="app-title">MediKUest</h1>
           </header>
           <DataSelection
-           fetchHistogram={fetchHistogram}
-           onExecute={fetchData}
-           onTotalNum={fetchTotalNum}
-            />
+            fetchHistogram={fetchHistogram}
+            onExecute={fetchData}
+            onTotalNum={fetchTotalNum}
+          />
           <div className="result-container">
-          <div className="result-title">Result:</div>
-          <div className="result-value">{result}</div>
-        </div>
+            <div className="result-title">Result:</div>
+            <div className="result-value">{result}</div>
+          </div>
+
+          <div className="query-buttons-container">
+            <button
+              onMouseEnter={() => setShowQueryDescription(true)}
+              onMouseLeave={() => setShowQueryDescription(false)}
+              onClick={fetchComplexQuery1}
+              className="query-button"
+            >
+              Execute Query
+            </button>
+            {showQueryDescription && (
+              <div className="query-description">
+                This query analyzes data to find correlations between certain health conditions and age groups.
+              </div>
+            )}
+          </div>
+
           {histogramImage && (
             <img
               key={imageKey}

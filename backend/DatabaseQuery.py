@@ -7,6 +7,13 @@ import random
 
 
 class MedicalDatabase:
+    minmaxSensitivities = {"Age":100, "Height":250, "Weight":100, "BMI":35, "Temperature":20, "HeartRate": 40, 
+                           "BloodPressure": 50, "Cholesterol": 130}
+    #avgSensitivities = {"Age":50, "Height":100, "Weight":52.5, "BMI":17, "Temperature":10, "HeartRate": 20, 
+    #                       "BloodPressure": 25, "Cholesterol": 65}
+    avgSensitivities = {"Age":100, "Height":250, "Weight":100, "BMI":35, "Temperature":20, "HeartRate": 40, 
+                           "BloodPressure": 50, "Cholesterol": 130}
+    exponentialBloodSensitivity = 1
     def __init__(self):
         db_connection = mysql.connector.connect(
             host="localhost",
@@ -56,19 +63,19 @@ class MedicalDatabase:
         max_query = f"SELECT MAX({attribute}) FROM patients;"
         self.cursor.execute(max_query)
         max_value = float(self.cursor.fetchone()[0])
-        return max_value + self.laplaceMechanism(personal_epsilon, 100)
+        return max_value + self.laplaceMechanism(personal_epsilon, self.minmaxSensitivities[attribute])
 
     def minGeneral(self, attribute, personal_epsilon):
         min_query = f"SELECT MIN({attribute}) FROM patients;"
         self.cursor.execute(min_query)
         min_value = float(self.cursor.fetchone()[0])
-        return min_value + self.laplaceMechanism(personal_epsilon, 100)
+        return min_value + self.laplaceMechanism(personal_epsilon, self.minmaxSensitivities[attribute])
 
     def averageGeneral(self, attribute, personal_epsilon):
         average_query = f"SELECT AVG({attribute}) FROM patients;"
         self.cursor.execute(average_query)
         avg_value = float(self.cursor.fetchone()[0])
-        return avg_value + self.laplaceMechanism(personal_epsilon, 100)
+        return avg_value + self.laplaceMechanism(personal_epsilon, self.avgSensitivities[attribute])
 
 
     """
@@ -130,7 +137,6 @@ class MedicalDatabase:
         plt.xlabel(attribute)
         plt.ylabel('Total Number')
         plt.title(f'{attribute} Numbers')
-       # plt.show()
 
         fig, ax = plt.subplots()
         ax.bar(values, total_num_list, color='blue')
@@ -141,7 +147,7 @@ class MedicalDatabase:
 
     def mostCommonBloodType(self, personal_epsilon):
         blood_types = ["A", "B", "AB", "O"]
-        return self.exponentialMechanism(personal_epsilon, 1, blood_types, "blood")
+        return self.exponentialMechanism(personal_epsilon, self.exponentialBloodSensitivity, blood_types, "blood")
 
     # Authentication
     def loginCheck(self, username, password):
@@ -166,6 +172,61 @@ class MedicalDatabase:
             self.cursor.execute(registerQuery, (username, password, 5.0))
             self.connection.commit()
             return 1
+        
+    def complexQuery1(self, personal_epsilon):
+        query = """
+                    SELECT 
+                    AgeGroup,
+                    -- Calculate the intersection of high counts
+                    SUM(HighBMICount * HighBPCount * HighCholesterolCount) AS IntersectionCount
+                FROM (
+                    SELECT 
+                        CASE 
+                            WHEN Age BETWEEN 18 AND 30 THEN '18-30'
+                            WHEN Age BETWEEN 31 AND 45 THEN '31-45'
+                            WHEN Age BETWEEN 46 AND 60 THEN '46-60'
+                            ELSE '60+' 
+                        END AS AgeGroup,
+                        BMI AS AverageBMI,
+                        BloodPressure AS AverageBloodPressure,
+                        Cholesterol AS AverageCholesterol,
+                        CASE WHEN BMI > 25 THEN 1 ELSE 0 END AS HighBMICount,
+                        CASE WHEN BloodPressure > 120 THEN 1 ELSE 0 END AS HighBPCount,
+                        CASE WHEN Cholesterol > 200 THEN 1 ELSE 0 END AS HighCholesterolCount
+                    FROM Patients
+                    WHERE Age IS NOT NULL
+                ) AS DerivedTable
+                GROUP BY AgeGroup;
+                """
+        
+        self.cursor.execute(query)
+        result = self.cursor.fetchall()
+
+        return self.createHistogram2(result, personal_epsilon)
+        
+
+    def createHistogram2(self, result, personal_epsilon):
+        values = []
+        total_num_list = []
+        attribute = "Expected Deaths"
+        for tuple in result:
+            values.append(tuple[0])
+            total_num_list.append(float(tuple[1]) + self.laplaceMechanism(personal_epsilon, 1))
+
+        plt.bar(values, total_num_list, color='blue')
+        plt.xlabel(attribute)
+        plt.ylabel('Total Number')
+        plt.title(f'{attribute} Numbers')
+
+        fig, ax = plt.subplots()
+        ax.bar(values, total_num_list, color='blue')
+        ax.set_xlabel(attribute)
+        ax.set_ylabel('Total Number')
+        ax.set_title(f'{attribute} Numbers')
+        return fig
+
+
+
 
     def close_connection(self):
         # Close the database connection
@@ -177,12 +238,12 @@ if __name__ == "__main__":
     medical_db = MedicalDatabase()
 
     # Retrieve statistics for patients' ages
-    max_age, min_age, avg_age = medical_db.maxMinAverageGeneral("Age", 10)
+    # max_age, min_age, avg_age = medical_db.maxMinAverageGeneral("Age", 10)
 
-    print("Maximum Age:", max_age)
-    print("Minimum Age:", min_age)
-    print("Average Age:", avg_age)
-
+    # print("Maximum Age:", max_age)
+    # print("Minimum Age:", min_age)
+    # print("Average Age:", avg_age)
+    """
     zeroTypeTotal = medical_db.bloodTypeTotalNum("A", 10, 1)
     print(zeroTypeTotal)
     zeroTypeTotal = medical_db.bloodTypeTotalNum("B", 10, 1)
@@ -191,12 +252,15 @@ if __name__ == "__main__":
     print(zeroTypeTotal)
     zeroTypeTotal = medical_db.bloodTypeTotalNum("O", 10, 1)
     print(zeroTypeTotal)
+    """
+
+    # res=medical_db.complexQuery1(10)
 
 
     # medical_db.createBloodHistogram(10)
     # medical_db.createDiabetesHistogram(10)
     # medical_db.createSmokeHistogram(10)
-    print(medical_db.mostCommonBloodType(10))
+    # print(medical_db.mostCommonBloodType(10))
 
     # Close the database connection
     medical_db.close_connection()

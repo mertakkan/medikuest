@@ -9,6 +9,25 @@ import io
 app = Flask(__name__)
 CORS(app)  # Enable CORS
 
+
+@app.route('/api/complexQuery1', methods=['POST'])
+def complex_query_1():
+    data = request.json
+    username = data['username']
+    personal_epsilon = data['personal_epsilon']
+
+    db = MedicalDatabase()
+    fig = db.complexQuery1(personal_epsilon)
+    db.update_epsilon(username)
+    db.close_connection()
+
+    img = io.BytesIO()
+    fig.savefig(img, format='png')
+    img.seek(0)
+    img_base64 = base64.b64encode(img.getvalue()).decode()
+
+    return jsonify({'image': img_base64})
+
 @app.route('/api/histogram', methods=['POST'])
 def histogram():
     data = request.json
